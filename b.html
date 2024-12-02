@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Persona 5 Inspired Text Animation</title>
+    <style>
+        body {
+            background-color: black;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            margin: 0;
+        }
+
+        .text-container {
+            perspective: 2000px;
+            transform-style: preserve-3d;
+            transform: rotateX(45deg) rotateY(-5deg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+            padding: 50px;
+        }
+
+        .text-line {
+            display: flex;
+            gap: 15px;
+        }
+
+        .letter-box {
+            position: relative;
+            display: inline-block;
+            font-weight: bold;
+            color: white;
+            transform: rotateZ(calc(var(--random-rotation) * 1deg)) translateZ(calc(var(--random-depth) * 1px));
+            animation: slideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+            opacity: 0;
+            font-size: calc(var(--random-size) * 1rem);
+            font-family: var(--random-font);
+            will-change: transform, opacity;
+        }
+
+        .letter {
+            position: relative;
+            padding: 5px;
+            border: 2px solid white;
+            transition: all 0.2s ease;
+        }
+
+        .letter.white {
+            color: red;
+            padding: 5px;
+            background-color: black;
+        }
+
+        .letter.red-box {
+            background-color: red;
+            color: white;
+            padding: 5px;
+            transform: skew(-10deg);
+        }
+
+        .letter.first-letter {
+            border: none;
+            padding: 10px;
+            font-size: 1.5em;
+        }
+
+        .letter.first-letter .inner-box {
+            background-color: red;
+            padding: 5px;
+            transform: skew(calc(var(--random-skew) * 1deg));
+            transition: transform 0.2s ease;
+        }
+
+        .outer-box {
+            border: 2px solid white;
+            padding: 10px;
+            background-color: black;
+            transition: all 0.2s ease;
+        }
+
+        @keyframes slideIn {
+            0% {
+                opacity: 0;
+                transform: translate3d(calc(var(--start-x) * 2), calc(var(--start-y) * 2), -600px) rotateZ(calc(var(--random-rotation) * -2deg)) scale(0.3);
+            }
+            
+            30% {
+                opacity: 1;
+            }
+
+            85% {
+                transform: translate3d(calc(var(--start-x) * -0.1), calc(var(--start-y) * -0.1), calc(var(--random-depth) * 1.2px)) rotateZ(calc(var(--random-rotation) * -0.3deg)) scale(1.1);
+            }
+
+            95% {
+                transform: translate3d(0, 0, calc(var(--random-depth) * 1.05px)) rotateZ(calc(var(--random-rotation) * 1.1deg)) scale(0.95);
+            }
+
+            100% {
+                opacity: 1;
+                transform: rotateZ(calc(var(--random-rotation) * 1deg)) translateZ(calc(var(--random-depth) * 1px)) scale(1);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="text-container" id="text-container"></div>
+
+    <script>
+        const lines = [
+            "八千里路云和月+++",
+            "莫等闲，白了少年头"
+        ];
+        const textContainer = document.getElementById('text-container');
+        const fonts = ['Arial Black', 'Impact', 'Verdana', 'Georgia', 'Trebuchet MS'];
+
+        lines.forEach((lineText, lineIndex) => {
+            const textLine = document.createElement('div');
+            textLine.classList.add('text-line');
+            
+            lineText.split('').forEach((char, charIndex) => {
+                const letterBox = document.createElement('div');
+                letterBox.classList.add('letter-box');
+                letterBox.style.setProperty('--start-x', `${Math.random() * 600 - 300}px`);
+                letterBox.style.setProperty('--start-y', `${Math.random() * 600 - 300}px`);
+                letterBox.style.setProperty('--random-rotation', `${Math.random() * 30 - 15}`);
+                letterBox.style.setProperty('--random-depth', `${Math.random() * 400}`);
+                letterBox.style.setProperty('--random-size', `${Math.random() * 1.5 + 3}`);
+                letterBox.style.setProperty('--random-font', `'${fonts[Math.floor(Math.random() * fonts.length)]}'`);
+
+                const letter = document.createElement('div');
+                letter.classList.add('letter');
+
+                if (charIndex === 0) {
+                    letter.classList.add('first-letter');
+                    const outerBox = document.createElement('div');
+                    outerBox.classList.add('outer-box');
+                    const innerBox = document.createElement('div');
+                    innerBox.classList.add('inner-box');
+                    innerBox.textContent = char;
+                    outerBox.appendChild(innerBox);
+                    letter.appendChild(outerBox);
+                } else {
+                    if ((lineIndex + charIndex) % 2 === 0) {
+                        letter.classList.add('red-box');
+                    } else {
+                        letter.classList.add('white');
+                    }
+                    letter.textContent = char;
+                }
+
+                letterBox.appendChild(letter);
+                textLine.appendChild(letterBox);
+
+                setTimeout(() => {
+                    const totalIndex = lineIndex * lineText.length + charIndex;
+                    letterBox.style.animationDelay = `${totalIndex * 0.08}s`;
+                }, 0);
+            });
+
+            textContainer.appendChild(textLine);
+        });
+    </script>
+</body>
+
+</html>

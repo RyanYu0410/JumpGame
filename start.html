@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jump Game - Start Menu</title>
+    <style>
+        body {
+            background-color: black;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            flex-direction: row;
+            padding: 20px;
+            gap: 50px;
+            overflow: hidden;
+        }
+
+        .text-container {
+            perspective: 2000px;
+            transform-style: preserve-3d;
+            transform: rotateX(45deg) rotateY(-5deg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: clamp(15px, 3vw, 30px);
+            padding: clamp(20px, 5vw, 50px);
+            width: 100%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto !important;
+            overflow-x: visible !important;
+            scrollbar-width: thin;
+            scrollbar-color: red black;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .text-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .text-container::-webkit-scrollbar-track {
+            background: black;
+        }
+
+        .text-container::-webkit-scrollbar-thumb {
+            background-color: red;
+            border-radius: 4px;
+        }
+
+        .text-line {
+            display: flex;
+            gap: clamp(8px, 2vw, 15px);
+            width: 100%;
+            justify-content: center;
+            flex-wrap: nowrap; /* Changed to nowrap to prevent line breaks */
+        }
+
+        .text-line:nth-child(6),
+        .text-line:nth-child(7) {
+            transform: translateX(clamp(-100px, -15vw, -200px));
+        }
+        .text-line:first-child {
+            position: relative;
+            padding: clamp(10px, 4vw, 20px);
+            animation: wiggle 2s ease-in-out infinite;
+            background-color: black;
+        }
+
+        .text-line:first-child::before {
+            content: '';
+            position: absolute;
+            top: clamp(-5px, -2vw, -10px);
+            left: clamp(-10px, -4vw, -20px);
+            right: clamp(-10px, -4vw, -20px);
+            bottom: clamp(-5px, -2vw, -10px);
+            border: clamp(2px, 0.8vw, 4px) solid white;
+            border-radius: clamp(3px, 1vw, 5px);
+            transform: rotate(-1deg) scale(1.05);
+            pointer-events: none;
+            filter: url(#rough);
+            animation: borderWiggle 2s linear infinite;
+            background-color: white;
+        }
+
+        .text-line:first-child::after {
+            content: '';
+            position: absolute;
+            top: clamp(-2px, -1vw, -5px);
+            left: clamp(-7px, -3vw, -15px);
+            right: clamp(-7px, -3vw, -15px);
+            bottom: clamp(-2px, -1vw, -5px);
+            border: clamp(1px, 0.4vw, 2px) solid rgba(255, 255, 255, 0.5);
+            border-radius: clamp(2px, 0.6vw, 3px);
+            transform: rotate(1deg) scale(0.98);
+            pointer-events: none;
+            filter: url(#rough);
+            animation: innerBorderWiggle 2s linear infinite;
+            background-color: black;
+        }
+
+        .text-line:first-child > * {
+            position: relative;
+            z-index: 1;
+            background-color: black;
+            padding: clamp(3px, 1vw, 5px);
+        }
+
+        @keyframes wiggle {
+            0% { transform: translate(0, 0) rotate(-1deg); }
+            15% { transform: translate(clamp(1px, 0.4vw, 2px), clamp(0.5px, 0.2vw, 1px)) rotate(1deg); }
+            30% { transform: translate(clamp(-0.5px, -0.2vw, -1px), clamp(-1px, -0.4vw, -2px)) rotate(-0.5deg); }
+            45% { transform: translate(clamp(1px, 0.4vw, 2px), clamp(1px, 0.4vw, 2px)) rotate(1deg); }
+            60% { transform: translate(clamp(-1px, -0.4vw, -2px), clamp(0.5px, 0.2vw, 1px)) rotate(-1deg); }
+            75% { transform: translate(clamp(0.5px, 0.2vw, 1px), clamp(-0.5px, -0.2vw, -1px)) rotate(0.5deg); }
+            90% { transform: translate(clamp(-0.5px, -0.2vw, -1px), clamp(1px, 0.4vw, 2px)) rotate(-0.5deg); }
+            100% { transform: translate(0, 0) rotate(-1deg); }
+        }
+
+        @keyframes borderWiggle {
+            0% { 
+                border-radius: clamp(3px, 1.2vw, 6px) clamp(2px, 0.8vw, 4px) clamp(3.5px, 1.4vw, 7px) clamp(2.5px, 1vw, 5px);
+                transform: rotate(-1deg) scale(1.05);
+            }
+            25% {
+                border-radius: clamp(2.5px, 1vw, 5px) clamp(3.5px, 1.4vw, 7px) clamp(2px, 0.8vw, 4px) clamp(3px, 1.2vw, 6px);
+                transform: rotate(0.5deg) scale(1.04);
+            }
+            50% { 
+                border-radius: clamp(3.5px, 1.4vw, 7px) clamp(2.5px, 1vw, 5px) clamp(3px, 1.2vw, 6px) clamp(2px, 0.8vw, 4px);
+                transform: rotate(1deg) scale(1.05);
+            }
+            75% {
+                border-radius: clamp(2px, 0.8vw, 4px) clamp(3px, 1.2vw, 6px) clamp(2.5px, 1vw, 5px) clamp(3.5px, 1.4vw, 7px);
+                transform: rotate(-0.5deg) scale(1.06);
+            }
+            100% {
+                border-radius: clamp(3px, 1.2vw, 6px) clamp(2px, 0.8vw, 4px) clamp(3.5px, 1.4vw, 7px) clamp(2.5px, 1vw, 5px);
+                transform: rotate(-1deg) scale(1.05);
+            }
+        }
+
+        @keyframes innerBorderWiggle {
+            0% { 
+                border-radius: clamp(2px, 0.8vw, 4px) clamp(2.5px, 1vw, 5px) clamp(1.5px, 0.6vw, 3px) clamp(2px, 0.8vw, 4px);
+                transform: rotate(1deg) scale(0.98);
+            }
+            25% {
+                border-radius: clamp(1.5px, 0.6vw, 3px) clamp(2px, 0.8vw, 4px) clamp(2.5px, 1vw, 5px) clamp(1.5px, 0.6vw, 3px);
+                transform: rotate(-0.5deg) scale(0.97);
+            }
+            50% { 
+                border-radius: clamp(2.5px, 1vw, 5px) clamp(1.5px, 0.6vw, 3px) clamp(2px, 0.8vw, 4px) clamp(2.5px, 1vw, 5px);
+                transform: rotate(-1deg) scale(0.98);
+            }
+            75% {
+                border-radius: clamp(2px, 0.8vw, 4px) clamp(2.5px, 1vw, 5px) clamp(1.5px, 0.6vw, 3px) clamp(2px, 0.8vw, 4px);
+                transform: rotate(0.5deg) scale(0.99);
+            }
+            100% {
+                border-radius: clamp(2px, 0.8vw, 4px) clamp(2.5px, 1vw, 5px) clamp(1.5px, 0.6vw, 3px) clamp(2px, 0.8vw, 4px);
+                transform: rotate(1deg) scale(0.98);
+            }
+        }
+
+        .letter-box {
+            position: relative;
+            display: inline-block;
+            font-weight: bold;
+            color: white;
+            transform: rotateZ(calc(var(--random-rotation) * 1deg)) translateZ(calc(var(--random-depth) * 1px));
+            animation: slideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+            opacity: 0;
+            font-size: calc(var(--random-size) * clamp(0.6rem, 1.5vw, 1rem));
+            font-family: var(--random-font);
+            will-change: transform, opacity;
+        }
+
+        .letter {
+            position: relative;
+            padding: clamp(3px, 1vw, 5px);
+            border: 2px solid white;
+            transition: all 0.2s ease;
+        }
+
+        .letter.white {
+            color: red;
+            padding: clamp(3px, 1vw, 5px);
+            background-color: black;
+        }
+
+        .letter.red-box {
+            background-color: red;
+            color: white;
+            padding: clamp(3px, 1vw, 5px);
+            transform: skew(-10deg);
+        }
+
+        .letter.first-letter {
+            border: none;
+            padding: clamp(5px, 2vw, 10px);
+            font-size: 1.5em;
+        }
+
+        .letter.first-letter .inner-box {
+            background-color: red;
+            padding: clamp(3px, 1vw, 5px);
+            transform: skew(calc(var(--random-skew) * 1deg));
+            transition: transform 0.2s ease;
+        }
+
+        .outer-box {
+            border: 2px solid white;
+            padding: clamp(5px, 2vw, 10px);
+            background-color: black;
+            transition: all 0.2s ease;
+        }
+
+        @keyframes slideIn {
+            0% {
+                opacity: 0;
+                transform: translate3d(calc(var(--start-x) * 2), calc(var(--start-y) * 2), -600px) rotateZ(calc(var(--random-rotation) * -2deg)) scale(0.3);
+            }
+            
+            30% {
+                opacity: 1;
+            }
+
+            85% {
+                transform: translate3d(calc(var(--start-x) * -0.1), calc(var(--start-y) * -0.1), calc(var(--random-depth) * 1.2px)) rotateZ(calc(var(--random-rotation) * -0.3deg)) scale(1.1);
+            }
+
+            95% {
+                transform: translate3d(0, 0, calc(var(--random-depth) * 1.05px)) rotateZ(calc(var(--random-rotation) * 1.1deg)) scale(0.95);
+            }
+
+            100% {
+                opacity: 1;
+                transform: rotateZ(calc(var(--random-rotation) * 1deg)) translateZ(calc(var(--random-depth) * 1px)) scale(1);
+            }
+        }
+
+        .start-btn {
+            position: relative;
+            font-size: clamp(1rem, 3vw, 1.5rem);
+            color: white;
+            border-width: 4px 2px 1px 3px;
+            border-style: solid;
+            border-color: white;
+            background: black;
+            padding: clamp(0.5rem, 2vw, 1rem) clamp(1.5rem, 4vw, 3rem);
+            cursor: pointer;
+            margin-bottom: clamp(0.5rem, 2vw, 1rem);
+            z-index: 100;
+            font-family: 'Arial Black';
+            transform-style: preserve-3d;
+            transform: rotateZ(calc(var(--random-rotation, 5) * 1deg)) translateZ(calc(var(--random-depth, 100) * 1px));
+            animation: slideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+            animation-delay: 1s;
+            opacity: 0;
+            height: fit-content;
+            align-self: center;
+        }
+
+        .start-btn:hover {
+            background: red;
+            transform: rotateZ(calc(var(--random-rotation, 5) * 1.2deg)) translateZ(calc(var(--random-depth, 100) * 1.2px)) scale(1.1);
+        }
+
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+            
+            .text-container {
+                transform: rotateX(35deg) rotateY(-5deg);
+            }
+
+            .text-line:nth-child(6),
+            .text-line:nth-child(7) {
+                transform: translateX(-10px);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .text-container {
+                transform: rotateX(25deg) rotateY(-5deg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="text-container" id="text-container"></div>
+    <button class="start-btn" onclick="window.location.href='game.html'">Start Game</button>
+
+    <script>
+        const lines = [
+            "Jump Game",
+            "How to Play:",
+            "1. Choose Control Mode",
+            " Mouse: Click&Hold",
+            " Pose: Squat&Jump", 
+            "2. Score Points",
+            "3. Don't Fall!"
+        ];
+        const textContainer = document.getElementById('text-container');
+        const fonts = ['Arial Black', 'Impact', 'Verdana', 'Georgia', 'Trebuchet MS'];
+
+        lines.forEach((lineText, lineIndex) => {
+            const textLine = document.createElement('div');
+            textLine.classList.add('text-line');
+            
+            lineText.split('').forEach((char, charIndex) => {
+                const letterBox = document.createElement('div');
+                letterBox.classList.add('letter-box');
+                letterBox.style.setProperty('--start-x', `${Math.random() * 600 - 300}px`);
+                letterBox.style.setProperty('--start-y', `${Math.random() * 600 - 300}px`);
+                letterBox.style.setProperty('--random-rotation', `${Math.random() * 30 - 15}`);
+                letterBox.style.setProperty('--random-depth', `${Math.random() * 400}`);
+                
+                // Set larger size for title, smaller for instructions
+                if (lineIndex === 0) {
+                    letterBox.style.setProperty('--random-size', `${Math.random() * 2 + 4}`); // 4-6rem for title
+                } else if (lineIndex === 3 || lineIndex === 4) {
+                    letterBox.style.setProperty('--random-size', `${Math.random() * 0.3 + 1.5}`); // 1.5-2rem for control modes
+                } else {
+                    letterBox.style.setProperty('--random-size', `${Math.random() * 1 + 2}`); // 2-3rem for other instructions
+                }
+                
+                letterBox.style.setProperty('--random-font', `'${fonts[Math.floor(Math.random() * fonts.length)]}'`);
+
+                const letter = document.createElement('div');
+                letter.classList.add('letter');
+
+                if (charIndex === 0) {
+                    letter.classList.add('first-letter');
+                    const outerBox = document.createElement('div');
+                    outerBox.classList.add('outer-box');
+                    const innerBox = document.createElement('div');
+                    innerBox.classList.add('inner-box');
+                    innerBox.textContent = char;
+                    outerBox.appendChild(innerBox);
+                    letter.appendChild(outerBox);
+                } else {
+                    if ((lineIndex + charIndex) % 2 === 0) {
+                        letter.classList.add('red-box');
+                    } else {
+                        letter.classList.add('white');
+                    }
+                    letter.textContent = char;
+                }
+
+                letterBox.appendChild(letter);
+                textLine.appendChild(letterBox);
+
+                setTimeout(() => {
+                    const totalIndex = lineIndex * lineText.length + charIndex;
+                    letterBox.style.animationDelay = `${totalIndex * 0.08}s`;
+                }, 0);
+            });
+
+            textContainer.appendChild(textLine);
+        });
+    </script>
+</body>
+</html>

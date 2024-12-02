@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!-- ... meta tags and styles ... -->
+    <title>跳格子游戏</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        #score {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            color: white;
+            font-size: 24px;
+            font-family: Arial;
+            z-index: 100;
+        }
+
+        #holdTime {
+            position: fixed;
+            top: 50px;
+            left: 20px;
+            color: white;
+            font-size: 24px;
+            font-family: Arial;
+            z-index: 100;
+        }
+
+        #videoCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        #hideVideoBtn, #toggleControlBtn, #restartBtn {
+            position: fixed;
+            top: 20px;
+            padding: 8px 16px;
+            background: rgba(0,0,0,0.5);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        #hideVideoBtn {
+            right: 20px;
+            z-index: 100;
+        }
+
+        #toggleControlBtn {
+            right: 150px;
+            z-index: 100;
+        }
+
+        #restartBtn {
+            right: 280px;
+            z-index: 100;
+        }
+
+        #hideVideoBtn:hover, #toggleControlBtn:hover, #restartBtn:hover {
+            background: rgba(0,0,0,0.7);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        #indicator {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        #indicator .circle {
+            position: absolute;
+            border: 2px solid white;
+            border-radius: 50%;
+            opacity: 0.7;
+            transition: all 0.2s ease-out;
+        }
+
+        #indicator .inner {
+            width: 50px;
+            height: 50px;
+            margin: -25px 0 0 -25px;
+        }
+
+        #indicator .outer {
+            width: 100px;
+            height: 100px; 
+            margin: -50px 0 0 -50px;
+        }
+
+        #indicator.charging .inner {
+            border-color: yellow;
+            animation: pulse 1s infinite;
+        }
+
+        #indicator.charging .outer {
+            border-color: yellow;
+            animation: pulse 1s infinite 0.2s;
+        }
+
+        #indicator.short-distance .inner,
+        #indicator.short-distance .outer {
+            border-color: green;
+            transform: scale(1.2);
+        }
+
+        #indicator.medium-distance .inner,
+        #indicator.medium-distance .outer {
+            border-color: yellow;
+            transform: scale(1.5);
+        }
+
+        #indicator.long-distance .inner,
+        #indicator.long-distance .outer {
+            border-color: red;
+            transform: scale(1.8);
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 0.7;
+            }
+            50% {
+                transform: scale(1.2);
+                opacity: 0.5;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 0.7;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="score">Score: 0</div>
+    <div id="holdTime">Hold Time: 0s</div>
+    <button id="hideVideoBtn">Hide Video</button>
+    <button id="toggleControlBtn">Switch to Mouse Control</button>
+    <button id="restartBtn">Restart Game</button>
+    <canvas id="videoCanvas" width="640" height="480"></canvas>
+    <div id="indicator">
+        <div class="circle inner"></div>
+        <div class="circle outer"></div>
+    </div>
+    <!-- Include Three.js, GLTFLoader, TensorFlow.js, and PoseNet -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.9.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/posenet@2.2.1/dist/posenet.min.js"></script>
+    <script>
+        let scene, camera, renderer;
+        let player, playerMixer, playerAction, platforms = [];
+        let score = 0;
+        let jumping = false;
+        let jumpVelocityY = 0;
+        let gravity = 0.6;
+        let maxHorizontalDisplacement = 20;
+        let indicator, mousePressStart = 0;
+        let charging = false;
+        let gameEnded = false;
+        let jumpDirection = new THREE.Vector3();
+        let targetPlatform;
+        let landingPredictor; // 落点预测指示器
+        let jumpTrajectory = null; // Initialize jumpTrajectory
+        let playerShadow; // 玩家阴影
+        let isPreparingJump = false; // Add this to track jump preparation state
+        let indicatorLayer; // New group for indicators
+        let isMouseControl = false; // Add control mode flag
+
+        // PoseNet variables
+        let video;
+        let poseNet;
+        let pose;
+        let isPowerHolding = false;
+        let isJumpingPose = false;
+        let previousPose = null;
+        let powerHoldStartTime = 0;
+
+        // Video visibility toggle
+        const hideVideoBtn = document.getElementById('hideVideoBtn');
+        const videoCanvas = document.getElementById('videoCanvas');
+        const toggleControlBtn = document.getElementById('toggleControlBtn');
+        const restartBtn = document.getElementById('restartBtn');
+        const indicatorElement = document.getElementById('indicator');
+        const holdTimeElement = document.getElementById('holdTime');
+        let isVideoVisible = true;
+
+        hideVideoBtn.addEventListener('click', () => {
+            isVideoVisible = !isVideoVisible;
+            videoCanvas.classList.toggle('hidden');
+            hideVideoBtn.textContent = isVideoVisible ? 'Hide Video' : 'Show Video';
+        });
+
+        toggleControlBtn.addEventListener('click', () => {
+            isMouseControl = !isMouseControl;
+            toggleControlBtn.textContent = isMouseControl ? 'Switch to Pose Control' : 'Switch to Mouse Control';
+            if (isMouseControl) {
+                // Add mouse event listeners
+                document.addEventListener('mousedown', onMouseDown);
+                document.addEventListener('mouseup', onMouseUp);
+            } else {
+                // Remove mouse event listeners
+                document.removeEventListener('mousedown', onMouseDown);
+                document.removeEventListener('mouseup', onMouseUp);
+            }
+        });
+
+        restartBtn.addEventListener('click', () => {
+            // Reset game state
+            score = 0;
+            gameEnded = false;
+            jumping = false;
+            jumpVelocityY = 0;
+            document.getElementById('score').textContent = `Score: ${score}`;
+            holdTimeElement.textContent = 'Hold Time: 0s';
+
+            // Remove all platforms
+            platforms.forEach(platform => scene.remove(platform));
+            platforms = [];
+
+            // Reset player position
+            if (player) {
+                player.position.set(0, 1, 0);
+            }
+
+            // Create new initial platform
+            const initialPlatform = createPlatform(0, 0, 8);
+            platforms.push(initialPlatform);
+            scene.add(initialPlatform);
+
+            // Generate new target platform
+            generateNewPlatform();
+        });
+
+        function onMouseDown(event) {
+            if (isMouseControl && !jumping && !gameEnded) {
+                mousePressStart = Date.now();
+                charging = true;
+                indicatorElement.classList.add('charging');
+                updateIndicatorDistance();
+                if (jumpTrajectory) {
+                    jumpTrajectory.visible = true;
+                }
+                playerAction.play();
+                console.log("Mouse down, charging started.");
+                
+                // Start updating hold time
+                updateHoldTime();
+            }
+        }
+
+        function updateHoldTime() {
+            if (charging) {
+                const holdDuration = (Date.now() - mousePressStart) / 1000;
+                holdTimeElement.textContent = `Hold Time: ${holdDuration.toFixed(1)}s`;
+                requestAnimationFrame(updateHoldTime);
+            }
+        }
+
+        function updateIndicatorDistance() {
+            if (!targetPlatform || !player) return;
+
+            const distance = new THREE.Vector3()
+                .subVectors(targetPlatform.position, player.position)
+                .length();
+
+            indicatorElement.classList.remove('short-distance', 'medium-distance', 'long-distance');
+
+            if (distance < 8) {
+                indicatorElement.classList.add('short-distance');
+            } else if (distance < 12) {
+                indicatorElement.classList.add('medium-distance');
+            } else {
+                indicatorElement.classList.add('long-distance');
+            }
+        }
+
+        function onMouseUp(event) {
+            if (isMouseControl && charging && !jumping && !gameEnded) {
+                const power = Math.min((Date.now() - mousePressStart) / 1000 * 15, 30);
+                indicatorElement.classList.remove('charging', 'short-distance', 'medium-distance', 'long-distance');
+                if (jumpTrajectory) {
+                    jumpTrajectory.visible = false;
+                }
+                if (landingPredictor) {
+                    landingPredictor.visible = false;
+                }
+                isPreparingJump = true;
+                console.log("Mouse up, jump initiated with power:", power);
+                setTimeout(() => {
+                    isPreparingJump = false;
+                    jump(power);
+                }, 400);
+                charging = false;
+                holdTimeElement.textContent = 'Hold Time: 0s';
+            }
+        }
+
+        async function init() {
+            console.log("Initializing game scene...");
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87CEEB);
+
+            // Create indicator layer that will stay above platforms
+            indicatorLayer = new THREE.Group();
+            scene.add(indicatorLayer);
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(20, 20, 20);
+            camera.lookAt(0, 0, 0);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            document.body.appendChild(renderer.domElement);
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(50, 100, 50);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            scene.add(directionalLight);
+
+            platforms = [];
+            const initialPlatform = createPlatform(0, 0, 8);
+            platforms.push(initialPlatform);
+            scene.add(initialPlatform);
+
+            generateNewPlatform();
+
+            loadPlayerModel();
+
+            // 创建玩家阴影
+            playerShadow = createPlayerShadow();
+            indicatorLayer.add(playerShadow);
+
+            // 设置摄像头视频流
+            video = document.createElement('video');
+            video.width = 640;
+            video.height = 480;
+            video.style.display = 'none';
+            document.body.appendChild(video);
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    'audio': false,
+                    'video': { width: 640, height: 480 }
+                });
+                video.srcObject = stream;
+                await video.play();
+            } catch (e) {
+                console.error('Error accessing webcam', e);
+            }
+
+            // 加载 PoseNet 模型
+            poseNet = await posenet.load();
+            detectPose();
+
+            animate();
+
+            // 绘制视频叠加层
+            drawVideoOverlay();
+        }
+
+        function createPlatform(x, y, size) {
+            console.log(`Creating platform at (${x}, ${y}) with size ${size}`);
+            const geometry = new THREE.BoxGeometry(size, 2, size);
+            const material = new THREE.MeshPhongMaterial({ 
+                color: Math.random() * 0xffffff,
+                shininess: 100 
+            });
+            const platform = new THREE.Mesh(geometry, material);
+            platform.position.set(x, y, 0);
+            platform.receiveShadow = true;
+            return platform;
+        }
+        function loadPlayerModel() {
+            console.log("Loading player model...");
+            const loader = new THREE.GLTFLoader();
+            loader.load('biden_joyful_jump.glb', 
+                // onLoad callback
+                function(gltf) {
+                    player = gltf.scene;
+                    player.traverse(function(node) {
+                        if (node.isMesh) {
+                            node.castShadow = true;
+                        }
+                    });
+                    scene.add(player);
+
+                    playerMixer = new THREE.AnimationMixer(player);
+                    playerAction = playerMixer.clipAction(gltf.animations[0]);
+                    playerAction.play();
+                    console.log("Player model loaded and animation started.");
+
+                    // Check if player is standing on the initial platform
+                    if (checkLanding()) {
+                        console.log("Player is standing on the initial platform.");
+                    } else {
+                        console.log("Player is not standing on the initial platform.");
+                    }
+
+                    // Update loading progress
+                    window.updateLoadingProgress();
+                },
+                // onProgress callback
+                function(xhr) {
+                    console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+                },
+                // onError callback
+                function(error) {
+                    console.error('Error loading model:', error);
+                }
+            );
+        }
+
+        function createPlayerShadow() {
+            console.log("Creating player shadow...");
+            const geometry = new THREE.CircleGeometry(0.5, 32);
+            const material = new THREE.MeshBasicMaterial({
+                color: 0x000000,
+                transparent: true,
+                opacity: 0.3
+            });
+            const shadow = new THREE.Mesh(geometry, material);
+            shadow.rotation.x = -Math.PI / 2;
+            shadow.renderOrder = 1;
+            return shadow;
+        }
+        function generateNewPlatform() {
+            console.log("Generating new platform...");
+            const lastPlatform = platforms[platforms.length - 1];
+            const minDistance = 5;
+            const maxDistance = 15;
+            let validPosition = false;
+            let newPlatform;
+            
+            while (!validPosition) {
+                const distance = Math.random() * (maxDistance - minDistance) + minDistance;
+                const angle = Math.random() * Math.PI * 2; // Random angle for full 360 degree placement
+                const x = lastPlatform.position.x + Math.cos(angle) * distance;
+                const z = lastPlatform.position.z + Math.sin(angle) * distance;
+                const y = Math.random() * 4 - 2; // Random height variation between -2 and 2
+                const size = Math.random() * 3 + 5;
+                
+                newPlatform = createPlatform(x, y, size);
+                
+                // Check for intersection with existing platforms
+                validPosition = true;
+                for (let platform of platforms) {
+                    const dx = newPlatform.position.x - platform.position.x;
+                    const dy = newPlatform.position.y - platform.position.y;
+                    const dz = newPlatform.position.z - platform.position.z;
+                    const minDistance = (newPlatform.geometry.parameters.width + platform.geometry.parameters.width) / 2;
+                    
+                    if (Math.sqrt(dx * dx + dy * dy + dz * dz) < minDistance) {
+                        validPosition = false;
+                        break;
+                    }
+                }
+            }
+            
+            // Remove old platforms to prevent memory issues
+            if (platforms.length > 5) {
+                scene.remove(platforms[0]);
+                platforms.shift();
+            }
+            
+            platforms.push(newPlatform);
+            scene.add(newPlatform);
+            targetPlatform = newPlatform;
+            console.log("New platform generated at:", newPlatform.position);
+        }
+
+        function jump(power) {
+            if (!jumping && !gameEnded) {
+                jumping = true;
+
+                const direction = new THREE.Vector3()
+                    .subVectors(targetPlatform.position, player.position)
+                    .normalize();
+
+                jumpVelocityY = power;
+                jumpDirection.copy(direction).multiplyScalar(power * 0.1);
+                console.log("Jumping with power:", power, "and direction:", direction);
+
+                // 播放跳跃动画
+                if (playerAction) {
+                    playerAction.stop();
+                    playerAction.play();
+                }
+            }
+        }
+
+        function checkLanding() {
+            if (!jumping) return;
+
+            // Check collision with current platform
+            const playerBounds = new THREE.Box3().setFromObject(player);
+            
+            for (let platform of platforms) {
+                const platformBounds = new THREE.Box3().setFromObject(platform);
+                
+                if (playerBounds.intersectsBox(platformBounds)) {
+                    // Landing on any platform is successful
+                    console.log("Successful landing!");
+                    score++;
+                    document.getElementById('score').textContent = `Score: ${score}`;
+                    generateNewPlatform();
+                    
+                    // Reset jump state
+                    jumping = false;
+                    jumpVelocityY = 0;
+                    jumpDirection.set(0, 0, 0);
+                    player.position.y = platform.position.y + 1;
+                    return;
+                }
+            }
+
+            // Check if player fell below platforms
+            if (player.position.y < -10) {
+                console.log("Game over - fell off platform");
+                gameEnded = true;
+                jumping = false;
+                // Redirect to end page with score
+                window.location.href = `end.html?score=${score}`;
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (playerMixer) {
+                playerMixer.update(0.01);
+            }
+
+            if (jumping && player) {
+                player.position.x += jumpDirection.x * 0.1;
+                player.position.z += jumpDirection.z * 0.1;
+                player.position.y += jumpVelocityY * 0.1;
+                jumpVelocityY -= gravity;
+
+                checkLanding();
+            }
+
+            // Update player shadow
+            if (player) {
+                const raycaster = new THREE.Raycaster();
+                raycaster.ray.direction.set(0, -1, 0);
+                raycaster.ray.origin.copy(player.position);
+                
+                const intersects = raycaster.intersectObjects(platforms);
+                if (intersects.length > 0) {
+                    const shadowMesh = player.getObjectByName('shadow');
+                    if (shadowMesh) {
+                        shadowMesh.position.y = intersects[0].point.y + 0.1;
+                        shadowMesh.visible = true;
+                    }
+                }
+            }
+
+            // Camera follow
+            if (player) {
+                const idealOffset = new THREE.Vector3(-5, 5, -5);
+                const idealLookAt = new THREE.Vector3(0, 2, 0);
+                
+                const currentPosition = new THREE.Vector3();
+                currentPosition.copy(player.position).add(idealOffset);
+                
+                const currentLookAt = new THREE.Vector3();
+                currentLookAt.copy(player.position).add(idealLookAt);
+                
+                camera.position.lerp(currentPosition, 0.1);
+                camera.lookAt(currentLookAt);
+            }
+
+            // Update indicator based on distance while charging
+            if (charging) {
+                updateIndicatorDistance();
+            }
+
+            // Detect user actions only if not in mouse control mode
+            if (pose && !isMouseControl) {
+                detectUserActions();
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        async function detectPose() {
+            const poseDetectionFrame = async () => {
+                const poseData = await poseNet.estimateSinglePose(video, {
+                    flipHorizontal: false
+                });
+                pose = poseData;
+                requestAnimationFrame(poseDetectionFrame);
+            };
+            poseDetectionFrame();
+        }
+        function detectUserActions() {
+            // Only track leg and hip keypoints
+            const leftHip = pose.keypoints.find(k => k.part === 'leftHip');
+            const rightHip = pose.keypoints.find(k => k.part === 'rightHip');
+            const leftKnee = pose.keypoints.find(k => k.part === 'leftKnee');
+            const rightKnee = pose.keypoints.find(k => k.part === 'rightKnee');
+            const leftAnkle = pose.keypoints.find(k => k.part === 'leftAnkle');
+            const rightAnkle = pose.keypoints.find(k => k.part === 'rightAnkle');
+
+            // Check if all keypoints are within canvas bounds
+            const keypoints = [leftHip, rightHip, leftKnee, rightKnee, leftAnkle, rightAnkle];
+            const allKeypointsInBounds = keypoints.every(keypoint => {
+                if (!keypoint) return false;
+                return keypoint.position.x >= 0 && 
+                       keypoint.position.x <= videoCanvas.width &&
+                       keypoint.position.y >= 0 && 
+                       keypoint.position.y <= videoCanvas.height;
+            });
+
+            if (allKeypointsInBounds && leftHip && rightHip && leftKnee && rightKnee && leftAnkle && rightAnkle) {
+                // Calculate leg positions
+                const hipY = (leftHip.position.y + rightHip.position.y) / 2;
+                const kneeY = (leftKnee.position.y + rightKnee.position.y) / 2;
+                const ankleY = (leftAnkle.position.y + rightAnkle.position.y) / 2;
+
+                if (!previousPose) {
+                    previousPose = { hipY, kneeY, ankleY };
+                    return;
+                }
+
+                // Calculate vertical movements
+                const hipDelta = hipY - previousPose.hipY;
+                const kneeDelta = kneeY - previousPose.kneeY;
+                const ankleDelta = ankleY - previousPose.ankleY;
+
+                // Detect squatting (all leg joints moving down)
+                if (!isPowerHolding && hipDelta > 5 && kneeDelta > 5 && ankleDelta > 5) {
+                    isPowerHolding = true;
+                    powerHoldStartTime = Date.now();
+                    charging = true;
+                    updateIndicatorDistance();
+                    console.log('Power hold started - Squatting detected');
+                    
+                    // Start updating hold time for pose control
+                    updateHoldTime();
+                }
+
+                // Detect jumping (all leg joints moving up rapidly)
+                if (isPowerHolding && hipDelta < -5 && kneeDelta < -5 && ankleDelta < -5) {
+                    isPowerHolding = false;
+                    charging = false;
+                    indicatorElement.classList.remove('charging', 'short-distance', 'medium-distance', 'long-distance');
+                    const powerHoldDuration = (Date.now() - powerHoldStartTime) / 1000;
+                    const jumpPower = Math.min(powerHoldDuration * 15, 30);
+                    jump(jumpPower);
+                    console.log('Jump detected with power:', jumpPower);
+                    holdTimeElement.textContent = 'Hold Time: 0s';
+                }
+
+                previousPose = { hipY, kneeY, ankleY };
+            }
+        }
+
+        const videoCtx = videoCanvas.getContext('2d');
+
+        function drawVideoOverlay() {
+            // Only draw if video is visible
+            if (isVideoVisible) {
+                // 清除画布
+                videoCtx.clearRect(0, 0, videoCanvas.width, videoCanvas.height);
+
+                // 绘制视频
+                videoCtx.drawImage(video, 0, 0, videoCanvas.width, videoCanvas.height);
+
+                // Draw pose keypoints if available
+                if (pose) {
+                    pose.keypoints.forEach(keypoint => {
+                        if (keypoint.score > 0.2) { // Only draw points with confidence above 0.2
+                            // Draw point
+                            videoCtx.beginPath();
+                            videoCtx.arc(keypoint.position.x, keypoint.position.y, 5, 0, 2 * Math.PI);
+                            videoCtx.fillStyle = 'red';
+                            videoCtx.fill();
+
+                            // Draw label
+                            videoCtx.fillStyle = 'white';
+                            videoCtx.strokeStyle = 'black';
+                            videoCtx.lineWidth = 2;
+                            videoCtx.font = '12px Arial';
+                            videoCtx.strokeText(keypoint.part, keypoint.position.x + 10, keypoint.position.y);
+                            videoCtx.fillText(keypoint.part, keypoint.position.x + 10, keypoint.position.y);
+                        }
+                    });
+                }
+
+                // 绘制底部三分之一的标记线
+                videoCtx.strokeStyle = 'red';
+                videoCtx.lineWidth = 2;
+                const yPosition = videoCanvas.height * (2 / 3);
+                videoCtx.beginPath();
+                videoCtx.moveTo(videoCanvas.width / 3, yPosition);
+                videoCtx.lineTo((videoCanvas.width / 3) * 2, yPosition);
+                videoCtx.stroke();
+            }
+
+            requestAnimationFrame(drawVideoOverlay);
+        }
+
+        window.addEventListener('resize', () => {
+            // ... existing code ...
+        });
+
+        init();
+    </script>
+</body>
+
+</html>
