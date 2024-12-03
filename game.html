@@ -72,81 +72,52 @@
             display: none !important;
         }
 
-        #indicator {
+        /* Loading screen styles */
+        #loadingScreen {
             position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            pointer-events: none;
-            z-index: 100;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
         }
 
-        #indicator .circle {
-            position: absolute;
-            border: 2px solid white;
-            border-radius: 50%;
-            opacity: 0.7;
-            transition: all 0.2s ease-out;
+        #loadingBar {
+            width: 200px;
+            height: 20px;
+            background: #333;
+            border-radius: 10px;
+            padding: 2px;
         }
 
-        #indicator .inner {
-            width: 50px;
-            height: 50px;
-            margin: -25px 0 0 -25px;
+        #loadingProgress {
+            width: 0%;
+            height: 100%;
+            background: #4CAF50;
+            border-radius: 8px;
+            transition: width 0.3s ease-in-out;
         }
 
-        #indicator .outer {
-            width: 100px;
-            height: 100px; 
-            margin: -50px 0 0 -50px;
-        }
-
-        #indicator.charging .inner {
-            border-color: yellow;
-            animation: pulse 1s infinite;
-        }
-
-        #indicator.charging .outer {
-            border-color: yellow;
-            animation: pulse 1s infinite 0.2s;
-        }
-
-        #indicator.short-distance .inner,
-        #indicator.short-distance .outer {
-            border-color: green;
-            transform: scale(1.2);
-        }
-
-        #indicator.medium-distance .inner,
-        #indicator.medium-distance .outer {
-            border-color: yellow;
-            transform: scale(1.5);
-        }
-
-        #indicator.long-distance .inner,
-        #indicator.long-distance .outer {
-            border-color: red;
-            transform: scale(1.8);
-        }
-
-        @keyframes pulse {
-            0% {
-                transform: scale(1);
-                opacity: 0.7;
-            }
-            50% {
-                transform: scale(1.2);
-                opacity: 0.5;
-            }
-            100% {
-                transform: scale(1);
-                opacity: 0.7;
-            }
+        #loadingText {
+            color: white;
+            margin-top: 10px;
+            font-family: Arial;
         }
     </style>
 </head>
 
 <body>
+    <div id="loadingScreen">
+        <div id="loadingBar">
+            <div id="loadingProgress"></div>
+        </div>
+        <div id="loadingText">Loading... 0%</div>
+    </div>
     <div id="score">Score: 0</div>
     <div id="holdTime">Hold Time: 0s</div>
     <button id="hideVideoBtn">Hide Video</button>
@@ -162,6 +133,7 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.9.0/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/posenet@2.2.1/dist/posenet.min.js"></script>
+    <script src="jump.html"></script>
     <script>
         let scene, camera, renderer;
         let player, playerMixer, playerAction, platforms = [];
@@ -175,12 +147,33 @@
         let gameEnded = false;
         let jumpDirection = new THREE.Vector3();
         let targetPlatform;
-        let landingPredictor; // 落点预测指示器
-        let jumpTrajectory = null; // Initialize jumpTrajectory
-        let playerShadow; // 玩家阴影
-        let isPreparingJump = false; // Add this to track jump preparation state
-        let indicatorLayer; // New group for indicators
-        let isMouseControl = false; // Add control mode flag
+        let landingPredictor;
+        let jumpTrajectory = null;
+        let playerShadow;
+        let isPreparingJump = false;
+        let indicatorLayer;
+        let isMouseControl = false;
+
+        // Loading manager setup
+        const loadingManager = new THREE.LoadingManager();
+        const loadingScreen = document.getElementById('loadingScreen');
+        const loadingProgress = document.getElementById('loadingProgress');
+        const loadingText = document.getElementById('loadingText');
+
+        loadingManager.onProgress = function(url, itemsLoaded, itemsTotal) {
+            const progress = (itemsLoaded / itemsTotal) * 100;
+            loadingProgress.style.width = progress + '%';
+            loadingText.textContent = `Loading... ${Math.round(progress)}%`;
+        };
+
+        loadingManager.onLoad = function() {
+            loadingScreen.style.display = 'none';
+            console.log('Loading complete!');
+        };
+
+        loadingManager.onError = function(url) {
+            console.error('Error loading ' + url);
+        };
 
         // PoseNet variables
         let video;
@@ -395,7 +388,7 @@
         }
         function loadPlayerModel() {
             console.log("Loading player model...");
-            const loader = new THREE.GLTFLoader();
+            const loader = new THREE.GLTFLoader(loadingManager);
             loader.load('biden_joyful_jump.glb', 
                 // onLoad callback
                 function(gltf) {
@@ -418,17 +411,6 @@
                     } else {
                         console.log("Player is not standing on the initial platform.");
                     }
-
-                    // Update loading progress
-                    window.updateLoadingProgress();
-                },
-                // onProgress callback
-                function(xhr) {
-                    console.log((xhr.loaded / xhr.total * 100) + '% loaded');
-                },
-                // onError callback
-                function(error) {
-                    console.error('Error loading model:', error);
                 }
             );
         }

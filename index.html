@@ -6,32 +6,81 @@
     <title>Jump Game - Start Menu</title>
     <style>
         body {
-            background-color: black;
+            background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('Artboard 1.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
             margin: 0;
-            flex-direction: row;
+            flex-direction: column;
             padding: 20px;
-            gap: 50px;
-            overflow: hidden;
+            gap: 30px;
+
+        }
+        .title-container {
+            perspective: 2000px;
+            transform-style: preserve-3d;
+            transform: rotateX(45deg) rotateY(-15deg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: clamp(25px, 6vw, 50px);
+            padding: clamp(20px, 5vw, 150px) 0 0 0;
+            width: 100%;
+            max-width: 800px;
+            position: relative;
+            font-size: 4em; /* Added larger font size for title */
+        }
+
+        .title-container::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            border: 3px solid white;
+            border-radius: 8px;
+            transform: rotate(-2deg) scale(1.1);
+            pointer-events: none;
+            animation: borderWiggle 2.5s linear infinite;
+            background-color: white;
+            z-index: -1;
+        }
+
+        .title-container::after {
+            content: '';
+            position: absolute;
+            top: -5px;
+            left: -5px;
+            right: -5px;
+            bottom: -5px;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 4px;
+            transform: rotate(1deg) scale(0.98);
+            pointer-events: none;
+            animation: innerBorderWiggle 2s linear infinite;
+            background-color: black;
+            z-index: -1;
         }
 
         .text-container {
-            perspective: 2000px;
+            perspective: 1500px;
             transform-style: preserve-3d;
             transform: rotateX(45deg) rotateY(-5deg);
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: clamp(15px, 3vw, 30px);
-            padding: clamp(20px, 5vw, 50px);
+            padding: clamp(0px, 5vw, 0px);
             width: 100%;
-            max-width: 800px;
-            max-height: 80vh;
-            overflow-y: auto !important;
-            overflow-x: visible !important;
+            max-width: 1200px;
+            max-height: 50vh;
+            overflow-y: auto;
+            overflow-x: visible;
             scrollbar-width: thin;
             scrollbar-color: red black;
             -webkit-overflow-scrolling: touch;
@@ -51,61 +100,17 @@
         }
 
         .text-line {
-            display: flex;
-            gap: clamp(8px, 2vw, 15px);
-            width: 100%;
+            gap: clamp(8px, 2vw, 0px);
+            
             justify-content: center;
-            flex-wrap: nowrap; /* Changed to nowrap to prevent line breaks */
+            flex-wrap: nowrap;
+            white-space: nowrap;
+            max-width: 100%;
         }
 
-        .text-line:nth-child(6),
-        .text-line:nth-child(7) {
+        .text-line:nth-child(5),
+        .text-line:nth-child(6) {
             transform: translateX(clamp(-100px, -15vw, -200px));
-        }
-        .text-line:first-child {
-            position: relative;
-            padding: clamp(10px, 4vw, 20px);
-            animation: wiggle 2s ease-in-out infinite;
-            background-color: black;
-        }
-
-        .text-line:first-child::before {
-            content: '';
-            position: absolute;
-            top: clamp(-5px, -2vw, -10px);
-            left: clamp(-10px, -4vw, -20px);
-            right: clamp(-10px, -4vw, -20px);
-            bottom: clamp(-5px, -2vw, -10px);
-            border: clamp(2px, 0.8vw, 4px) solid white;
-            border-radius: clamp(3px, 1vw, 5px);
-            transform: rotate(-1deg) scale(1.05);
-            pointer-events: none;
-            filter: url(#rough);
-            animation: borderWiggle 2s linear infinite;
-            background-color: white;
-        }
-
-        .text-line:first-child::after {
-            content: '';
-            position: absolute;
-            top: clamp(-2px, -1vw, -5px);
-            left: clamp(-7px, -3vw, -15px);
-            right: clamp(-7px, -3vw, -15px);
-            bottom: clamp(-2px, -1vw, -5px);
-            border: clamp(1px, 0.4vw, 2px) solid rgba(255, 255, 255, 0.5);
-            border-radius: clamp(2px, 0.6vw, 3px);
-            transform: rotate(1deg) scale(0.98);
-            pointer-events: none;
-            filter: url(#rough);
-            animation: innerBorderWiggle 2s linear infinite;
-            background-color: black;
-        }
-
-        .text-line:first-child > * {
-            position: relative;
-            z-index: 1;
-            background-color: black;
-            padding: clamp(3px, 1vw, 5px);
         }
 
         @keyframes wiggle {
@@ -164,7 +169,6 @@
                 transform: rotate(1deg) scale(0.98);
             }
         }
-
         .letter-box {
             position: relative;
             display: inline-block;
@@ -176,6 +180,7 @@
             font-size: calc(var(--random-size) * clamp(0.6rem, 1.5vw, 1rem));
             font-family: var(--random-font);
             will-change: transform, opacity;
+            max-width: 100%;
         }
 
         .letter {
@@ -242,6 +247,15 @@
             }
         }
 
+        @keyframes fontChange {
+            0% { font-family: 'Arial Black'; }
+            20% { font-family: 'Impact'; }
+            40% { font-family: 'Verdana'; }
+            60% { font-family: 'Georgia'; }
+            80% { font-family: 'Trebuchet MS'; }
+            100% { font-family: 'Arial Black'; }
+        }
+
         .start-btn {
             position: relative;
             font-size: clamp(1rem, 3vw, 1.5rem);
@@ -249,37 +263,76 @@
             border-width: 4px 2px 1px 3px;
             border-style: solid;
             border-color: white;
-            background: black;
+            background-color: black;
             padding: clamp(0.5rem, 2vw, 1rem) clamp(1.5rem, 4vw, 3rem);
             cursor: pointer;
             margin-bottom: clamp(0.5rem, 2vw, 1rem);
             z-index: 100;
             font-family: 'Arial Black';
             transform-style: preserve-3d;
-            transform: rotateZ(calc(var(--random-rotation, 5) * 1deg)) translateZ(calc(var(--random-depth, 100) * 1px));
             animation: slideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
             animation-delay: 1s;
             opacity: 0;
             height: fit-content;
             align-self: center;
+            --start-x: 300px;
+            --start-y: 200px;
+            --random-rotation: -10;
+            --random-depth: 100;
+            transition: all 0.2s ease-out;
         }
 
-        .start-btn:hover {
-            background: red;
-            transform: rotateZ(calc(var(--random-rotation, 5) * 1.2deg)) translateZ(calc(var(--random-depth, 100) * 1.2px)) scale(1.1);
+        .start-btn::before {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: -4px;
+            right: -4px;
+            bottom: -4px;
+            border: 2px solid white;
+            border-radius: 4px;
+            transform: rotate(-1deg) scale(1.05);
+            pointer-events: none;
+            animation: borderWiggle 2s linear infinite;
+            background-color: white;
+            z-index: -1;
+            transition: all 0.2s ease-out;
         }
+
+        .start-btn::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 2px;
+            transform: rotate(1deg) scale(0.98);
+            pointer-events: none;
+            animation: innerBorderWiggle 2s linear infinite;
+            background-color: black;
+            z-index: -1;
+            transition: all 0.2s ease-out;
+        }
+
+        .start-btn:hover::after {
+            animation: fontChange 2s linear infinite;
+            color: white;
+            background-color: red;
+            border-color: red;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+        }
+
 
         @media (max-width: 768px) {
-            body {
-                flex-direction: column;
-            }
-            
             .text-container {
                 transform: rotateX(35deg) rotateY(-5deg);
             }
 
-            .text-line:nth-child(6),
-            .text-line:nth-child(7) {
+            .text-line:nth-child(5),
+            .text-line:nth-child(6) {
                 transform: translateX(-10px);
             }
         }
@@ -292,21 +345,70 @@
     </style>
 </head>
 <body>
+    <div class="title-container" id="title-container"></div>
     <div class="text-container" id="text-container"></div>
     <button class="start-btn" onclick="window.location.href='game.html'">Start Game</button>
 
     <script>
-        const lines = [
-            "Jump Game",
-            "How to Play:",
+        const lines = [  
             "1. Choose Control Mode",
             " Mouse: Click&Hold",
             " Pose: Squat&Jump", 
             "2. Score Points",
             "3. Don't Fall!"
         ];
+
+        const title = ["Jump Game"];
+        
         const textContainer = document.getElementById('text-container');
+        const titleContainer = document.getElementById('title-container');
         const fonts = ['Arial Black', 'Impact', 'Verdana', 'Georgia', 'Trebuchet MS'];
+
+        title.forEach((lineText) => {
+            const textLine = document.createElement('div');
+            textLine.classList.add('text-line');
+            
+            lineText.split('').forEach((char, charIndex) => {
+                const letterBox = document.createElement('div');
+                letterBox.classList.add('letter-box');
+                letterBox.style.setProperty('--start-x', `${Math.random() * 600 - 300}px`);
+                letterBox.style.setProperty('--start-y', `${Math.random() * 600 - 300}px`);
+                letterBox.style.setProperty('--random-rotation', `${Math.random() * 30 - 15}`);
+                letterBox.style.setProperty('--random-depth', `${Math.random() * 400}`);
+                letterBox.style.setProperty('--random-size', `${Math.random() * 1.5 + 4}`); // Increased size for title
+                letterBox.style.setProperty('--random-font', `'${fonts[Math.floor(Math.random() * fonts.length)]}'`);
+
+                const letter = document.createElement('div');
+                letter.classList.add('letter');
+
+                if (charIndex === 0) {
+                    letter.classList.add('first-letter');
+                    const outerBox = document.createElement('div');
+                    outerBox.classList.add('outer-box');
+                    const innerBox = document.createElement('div');
+                    innerBox.classList.add('inner-box');
+                    innerBox.textContent = char;
+                    outerBox.appendChild(innerBox);
+                    letter.appendChild(outerBox);
+                } else {
+                    if (charIndex % 2 === 0) {
+                        letter.classList.add('red-box');
+                    } else {
+                        letter.classList.add('white');
+                    }
+                    letter.textContent = char;
+                }
+
+                letterBox.appendChild(letter);
+                textLine.appendChild(letterBox);
+
+                setTimeout(() => {
+                    letterBox.style.animationDelay = `${charIndex * 0.08}s`;
+                }, 0);
+            });
+
+            titleContainer.appendChild(textLine);
+        });
 
         lines.forEach((lineText, lineIndex) => {
             const textLine = document.createElement('div');
@@ -320,13 +422,10 @@
                 letterBox.style.setProperty('--random-rotation', `${Math.random() * 30 - 15}`);
                 letterBox.style.setProperty('--random-depth', `${Math.random() * 400}`);
                 
-                // Set larger size for title, smaller for instructions
-                if (lineIndex === 0) {
-                    letterBox.style.setProperty('--random-size', `${Math.random() * 2 + 4}`); // 4-6rem for title
-                } else if (lineIndex === 3 || lineIndex === 4) {
-                    letterBox.style.setProperty('--random-size', `${Math.random() * 0.3 + 1.5}`); // 1.5-2rem for control modes
+                if (lineIndex === 2 || lineIndex === 3) {
+                    letterBox.style.setProperty('--random-size', `${Math.random() * 0.2 + 1.2}`);
                 } else {
-                    letterBox.style.setProperty('--random-size', `${Math.random() * 1 + 2}`); // 2-3rem for other instructions
+                    letterBox.style.setProperty('--random-size', `${Math.random() * 0.5 + 1.5}`);
                 }
                 
                 letterBox.style.setProperty('--random-font', `'${fonts[Math.floor(Math.random() * fonts.length)]}'`);

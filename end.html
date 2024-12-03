@@ -3,90 +3,196 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Game Over</title>
+    <title>Jump Game - Game Over</title>
     <style>
         body {
-            margin: 0;
-            height: 100vh;
+            background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('Artboard 2.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
             display: flex;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
-            background: linear-gradient(45deg, #1a1a1a, #4a4a4a);
-            font-family: Arial, sans-serif;
-            color: white;
+            min-height: 100vh;
+            margin: 0;
+            flex-direction: row;
+            padding: 20px;
+            gap: 50px;
+            overflow: hidden;
         }
 
-        .container {
-            text-align: center;
-            padding: 2rem;
-            background: rgba(0, 0, 0, 0.5);
-            border-radius: 1rem;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
-        }
-
-        h1 {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-        }
-
-        .score {
-            font-size: 2rem;
-            margin-bottom: 2rem;
-            color: #ffd700;
-        }
-
-        .buttons {
+        .text-container {
+            perspective: 1500px;
+            transform-style: preserve-3d;
+            transform: rotateX(45deg) rotateY(-5deg);
             display: flex;
-            gap: 1rem;
+            flex-direction: column;
+            align-items: center;
+            gap: clamp(15px, 3vw, 30px);
+            padding: clamp(20px, 5vw, 50px);
+            width: 100%;
+            max-width: 100%;
+            max-height: 80vh;
+            overflow: auto;
+            scrollbar-width: thin;
+            scrollbar-color: red black;
+            -webkit-overflow-scrolling: touch;
         }
 
-        button {
-            padding: 1rem 2rem;
-            font-size: 1.2rem;
-            border: none;
-            border-radius: 0.5rem;
+        .text-line {
+            display: flex;
+            gap: clamp(8px, 2vw, 15px);
+            width: 100%;
+            justify-content: center;
+            flex-wrap: nowrap;
+            white-space: nowrap;
+            max-width: 100%;
+        }
+
+        .letter-box {
+            position: relative;
+            display: inline-block;
+            font-weight: bold;
+            color: white;
+            transform: rotateZ(calc(var(--random-rotation) * 1deg)) translateZ(calc(var(--random-depth) * 1px));
+            animation: slideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+            opacity: 0;
+            font-size: calc(var(--random-size) * clamp(0.6rem, 1.5vw, 1rem));
+            font-family: var(--random-font);
+            will-change: transform, opacity;
+            max-width: 100%;
+        }
+
+        .letter {
+            position: relative;
+            padding: clamp(3px, 1vw, 5px);
+            border: 2px solid white;
+            transition: all 0.2s ease;
+        }
+
+        .letter.white {
+            color: red;
+            padding: clamp(3px, 1vw, 5px);
+            background-color: black;
+        }
+
+        .letter.red-box {
+            background-color: red;
+            color: white;
+            padding: clamp(3px, 1vw, 5px);
+            transform: skew(-10deg);
+        }
+
+        .button {
+            position: relative;
+            font-size: clamp(1rem, 3vw, 1.5rem);
+            color: white;
+            border-width: 4px 2px 1px 3px;
+            border-style: solid;
+            border-color: white;
+            background-color: black;
+            padding: clamp(0.5rem, 2vw, 1rem) clamp(1.5rem, 4vw, 3rem);
             cursor: pointer;
-            transition: transform 0.2s, background-color 0.2s;
+            margin-bottom: clamp(0.5rem, 2vw, 1rem);
+            z-index: 100;
+            font-family: 'Arial Black';
+            transform-style: preserve-3d;
+            animation: slideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+            animation-delay: 1s;
+            opacity: 0;
+            height: fit-content;
+            align-self: center;
+            --start-x: 300px;
+            --start-y: 200px;
+            --random-rotation: -10;
+            --random-depth: 100;
+            transition: all 0.2s ease-out;
         }
 
-        .play-again {
-            background-color: #4CAF50;
-            color: white;
-        }
+        @keyframes slideIn {
+            0% {
+                opacity: 0;
+                transform: translate3d(calc(var(--start-x) * 2), calc(var(--start-y) * 2), -600px) rotateZ(calc(var(--random-rotation) * -2deg)) scale(0.3);
+            }
+            
+            30% {
+                opacity: 1;
+            }
 
-        .main-menu {
-            background-color: #2196F3;
-            color: white;
-        }
+            85% {
+                transform: translate3d(calc(var(--start-x) * -0.1), calc(var(--start-y) * -0.1), calc(var(--random-depth) * 1.2px)) rotateZ(calc(var(--random-rotation) * -0.3deg)) scale(1.1);
+            }
 
-        button:hover {
-            transform: scale(1.05);
-            filter: brightness(1.1);
-        }
+            95% {
+                transform: translate3d(0, 0, calc(var(--random-depth) * 1.05px)) rotateZ(calc(var(--random-rotation) * 1.1deg)) scale(0.95);
+            }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .container {
-            animation: fadeIn 0.5s ease-out;
+            100% {
+                opacity: 1;
+                transform: rotateZ(calc(var(--random-rotation) * 1deg)) translateZ(calc(var(--random-depth) * 1px)) scale(1);
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Game Over</h1>
-        <div class="score">Final Score: <span id="finalScore">0</span></div>
-        <div class="buttons">
-            <button class="play-again" onclick="location.href='game.html'">Play Again</button>
-            <button class="main-menu" onclick="location.href='index.html'">Main Menu</button>
-        </div>
+    <div class="text-container" id="text-container"></div>
+    <div class="buttons">
+        <button class="button" onclick="window.location.href='game.html'">Play Again</button>
+        <button class="button" onclick="window.location.href='index.html'">Main Menu</button>
     </div>
 
     <script>
+        const lines = [
+            "Game Over",
+            "Final Score:",
+            document.getElementById('finalScore').textContent || "0"
+        ];
+        
+        const textContainer = document.getElementById('text-container');
+        const fonts = ['Arial Black', 'Impact', 'Verdana', 'Georgia', 'Trebuchet MS'];
+
+        lines.forEach((lineText, lineIndex) => {
+            const textLine = document.createElement('div');
+            textLine.classList.add('text-line');
+            
+            lineText.split('').forEach((char, charIndex) => {
+                const letterBox = document.createElement('div');
+                letterBox.classList.add('letter-box');
+                letterBox.style.setProperty('--start-x', `${Math.random() * 600 - 300}px`);
+                letterBox.style.setProperty('--start-y', `${Math.random() * 600 - 300}px`);
+                letterBox.style.setProperty('--random-rotation', `${Math.random() * 30 - 15}`);
+                letterBox.style.setProperty('--random-depth', `${Math.random() * 400}`);
+                
+                if (lineIndex === 0) {
+                    letterBox.style.setProperty('--random-size', `${Math.random() * 1.5 + 3}`);
+                } else {
+                    letterBox.style.setProperty('--random-size', `${Math.random() * 0.5 + 1.5}`);
+                }
+                
+                letterBox.style.setProperty('--random-font', `'${fonts[Math.floor(Math.random() * fonts.length)]}'`);
+
+                const letter = document.createElement('div');
+                letter.classList.add('letter');
+
+                if ((lineIndex + charIndex) % 2 === 0) {
+                    letter.classList.add('red-box');
+                } else {
+                    letter.classList.add('white');
+                }
+                letter.textContent = char;
+
+                letterBox.appendChild(letter);
+                textLine.appendChild(letterBox);
+
+                setTimeout(() => {
+                    const totalIndex = lineIndex * lineText.length + charIndex;
+                    letterBox.style.animationDelay = `${totalIndex * 0.08}s`;
+                }, 0);
+            });
+
+            textContainer.appendChild(textLine);
+        });
+
         // Get the score from URL parameters if available
         const urlParams = new URLSearchParams(window.location.search);
         const score = urlParams.get('score') || 0;
