@@ -19,6 +19,7 @@ let isPreparingJump = false; // Add this to track jump preparation state
 let indicatorLayer; // New group for indicators
 let modelLoaded = false; // Add flag to track if model is loaded
 let platformGlitchMaterial; // Material for platform glitch effect
+let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
 function init() {
     console.log("Initializing game scene...");
@@ -116,9 +117,11 @@ function init() {
     jumpTrajectory = createJumpTrajectory();
     indicatorLayer.add(jumpTrajectory);
 
-    if ('ontouchstart' in window) {
-        renderer.domElement.addEventListener('touchstart', onTouchStart);
-        renderer.domElement.addEventListener('touchend', onTouchEnd);
+    // Add touch event listeners for mobile devices
+    if (isMobile) {
+        renderer.domElement.addEventListener('touchstart', onTouchStart, { passive: false });
+        renderer.domElement.addEventListener('touchend', onTouchEnd, { passive: false });
+        renderer.domElement.addEventListener('touchmove', onTouchMove, { passive: false });
     } else {
         renderer.domElement.addEventListener('mousedown', onMouseDown);
         renderer.domElement.addEventListener('mouseup', onMouseUp);
@@ -333,12 +336,34 @@ function onMouseUp(event) {
 
 function onTouchStart(event) {
     event.preventDefault();
-    onMouseDown(event.touches[0]);
+    if (!jumping && modelLoaded) {
+        mousePressStart = Date.now();
+        charging = true;
+        powerBar.visible = true;
+        jumpTrajectory.visible = true;
+        console.log("Touch start, charging started.");
+    }
+}
+
+function onTouchMove(event) {
+    event.preventDefault();
+    // Add touch move handling if needed
 }
 
 function onTouchEnd(event) {
     event.preventDefault();
-    onMouseUp(event);
+    if (charging && player) {
+        const power = Math.min((Date.now() - mousePressStart) / 1000 * jumpPower, jumpPower * 2);
+        powerBar.visible = false;
+        jumpTrajectory.visible = false;
+        landingPredictor.visible = false;
+        isPreparingJump = true;
+        console.log("Touch end, jump initiated with power:", power);
+        setTimeout(() => {
+            isPreparingJump = false;
+            jump(power);
+        }, 400); // 0.4s delay before jumping
+    }
 }
 
 function jump(power) {
