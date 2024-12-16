@@ -544,6 +544,11 @@
             } catch (e) {
                 console.error('Error accessing webcam:', e);
                 alert('Unable to access webcam. Please check your camera permissions.');
+                // Switch to mouse/touch controls if camera access fails
+                isMouseControl = true;
+                toggleControlBtn.textContent = 'Switch to Pose';
+                videoCanvas.style.display = 'none';
+                isVideoVisible = false;
             }
 
             try {
@@ -557,7 +562,12 @@
                 drawVideoOverlay();
             } catch (error) {
                 console.error('Error loading PoseNet:', error);
-                alert('Error loading pose detection. Please refresh the page.');
+                alert('Error loading pose detection. Switching to touch controls.');
+                // Switch to mouse/touch controls if PoseNet fails
+                isMouseControl = true;
+                toggleControlBtn.textContent = 'Switch to Pose';
+                videoCanvas.style.display = 'none';
+                isVideoVisible = false;
             }
         }
 
@@ -584,11 +594,15 @@
             if (isMouseControl) {
                 document.addEventListener('mousedown', onMouseDown);
                 document.addEventListener('mouseup', onMouseUp);
+                document.addEventListener('touchstart', onTouchStart);
+                document.addEventListener('touchend', onTouchEnd);
                 videoCanvas.style.display = 'none';
                 isVideoVisible = false;
             } else {
                 document.removeEventListener('mousedown', onMouseDown);
                 document.removeEventListener('mouseup', onMouseUp);
+                document.removeEventListener('touchstart', onTouchStart);
+                document.removeEventListener('touchend', onTouchEnd);
                 videoCanvas.style.display = 'block';
                 isVideoVisible = true;
             }
@@ -613,9 +627,22 @@
             powerFillElement.style.height = '0%';
         }
 
-        // Initialize with mouse controls
+        // Touch event handlers
+        function onTouchStart(event) {
+            event.preventDefault(); // Prevent default touch behavior
+            onMouseDown(event);
+        }
+
+        function onTouchEnd(event) {
+            event.preventDefault(); // Prevent default touch behavior
+            onMouseUp();
+        }
+
+        // Initialize with mouse and touch controls
         document.addEventListener('mousedown', onMouseDown);
         document.addEventListener('mouseup', onMouseUp);
+        document.addEventListener('touchstart', onTouchStart);
+        document.addEventListener('touchend', onTouchEnd);
 
         restartBtn.addEventListener('click', () => {
             if (typeof score === 'undefined' || typeof jumping === 'undefined' || 
@@ -738,7 +765,7 @@
                 if (isPowerHolding) {
                     console.log('Jump triggered - body part above line');
                     const holdTime = Date.now() - squatStartTime;
-                    const jumpPowerValue = Math.min(holdTime / 1000 * 1.5, 20); // Reduced multiplier from 15 to 7.5 for slower charging
+                    const jumpPowerValue = Math.min(holdTime / 1000 * 1.5, 50); // Reduced multiplier from 15 to 7.5 for slower charging
                     
                     isPowerHolding = false;
                     holdTimeElement.classList.remove('charging');
@@ -870,6 +897,3 @@
 
         window.addEventListener('load', initWebcam);
     </script>
-</body>
-
-</html>
