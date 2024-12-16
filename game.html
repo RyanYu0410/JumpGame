@@ -3,12 +3,19 @@
 
 <head>
     <title>Jump Game</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
         body {
             margin: 0;
             overflow: hidden;
             touch-action: none;
             font-family:Arial, Helvetica, sans-serif;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
         }
 
         #score, #holdTime {
@@ -111,6 +118,7 @@
             animation: wiggle 2s linear infinite;
             perspective: 2000px;
             transform-style: preserve-3d;
+            -webkit-tap-highlight-color: transparent;
         }
 
         @keyframes wiggle {
@@ -411,6 +419,24 @@
                 opacity: 0;
             }
         }
+
+        /* Mobile-specific styles */
+        @media (max-width: 768px) {
+            #hideVideoBtn, #toggleControlBtn, #restartBtn {
+                padding: 15px 30px;
+                font-size: 16px;
+            }
+
+            #score, #holdTime {
+                padding: 15px 30px;
+                font-size: 16px;
+            }
+
+            #videoCanvas {
+                width: 240px;
+                height: 180px;
+            }
+        }
     </style>
 </head>
 
@@ -479,6 +505,15 @@
         const holdTimeElement = document.getElementById('holdTime');
         const powerFillElement = document.querySelector('#holdTime .power-fill');
         const scoreElement = document.getElementById('score');
+
+        // Check if device is mobile
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        if (isMobile) {
+            isMouseControl = true;
+            toggleControlBtn.textContent = 'Switch to Pose';
+            videoCanvas.style.display = 'none';
+            isVideoVisible = false;
+        }
 
         // Draw red line at 1/3 height of video canvas
         function drawJumpLine() {
@@ -589,6 +624,11 @@
         });
 
         toggleControlBtn.addEventListener('click', () => {
+            if (isMobile && !isMouseControl) {
+                alert('Pose control is not available on mobile devices. Please use touch controls.');
+                return;
+            }
+            
             isMouseControl = !isMouseControl;
             toggleControlBtn.textContent = isMouseControl ? 'Switch to Pose' : 'Switch to Mouse';
             if (isMouseControl) {
@@ -623,19 +663,48 @@
         }
 
         function onMouseUp() {
-            holdTimeElement.classList.remove('charging');
-            powerFillElement.style.height = '0%';
+            if (holdTimeElement.classList.contains('charging')) {
+                const holdTime = Date.now() - powerHoldStartTime;
+                const jumpPowerValue = Math.min(holdTime / 1000 * jumpPower, jumpPower * 2);
+                
+                holdTimeElement.classList.remove('charging');
+                powerFillElement.style.height = '0%';
+                
+                if (!jumping && !gameEnded) {
+                    jump(jumpPowerValue);
+                }
+            }
         }
 
-        // Touch event handlers
+        // Touch event handlers with improved mobile support
         function onTouchStart(event) {
             event.preventDefault(); // Prevent default touch behavior
-            onMouseDown(event);
+            if (!jumping && !gameEnded && isMouseControl) {
+                holdTimeElement.classList.add('charging');
+                powerHoldStartTime = Date.now();
+                requestAnimationFrame(function updatePower() {
+                    if (holdTimeElement.classList.contains('charging')) {
+                        const holdTime = Date.now() - powerHoldStartTime;
+                        updatePowerBar(holdTime);
+                        requestAnimationFrame(updatePower);
+                    }
+                });
+            }
         }
 
         function onTouchEnd(event) {
             event.preventDefault(); // Prevent default touch behavior
-            onMouseUp();
+            if (holdTimeElement.classList.contains('charging')) {
+                const holdTime = Date.now() - powerHoldStartTime;
+                const jumpPowerValue = Math.min(holdTime / 1000 * jumpPower, jumpPower * 2);
+                
+                holdTimeElement.classList.remove('charging');
+                powerFillElement.style.height = '0%';
+                
+                if (!jumping && !gameEnded) {
+                    jump(jumpPowerValue);
+                }
+            }
         }
 
         // Initialize with mouse and touch controls
