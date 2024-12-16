@@ -727,8 +727,8 @@
             const avgKneeY = (leftKnee.position.y + rightKnee.position.y) / 2;
 
             // Detect squatting position - check if all points are detected with sufficient confidence
-            const allPointsDetected = leftHip.score > 0.7 && rightHip.score > 0.7 && 
-                                    leftKnee.score > 0.7 && rightKnee.score > 0.7 &&
+            const allPointsDetected = leftHip.score > 0.9 && rightHip.score > 0.9 && 
+                                    leftKnee.score > 0.9 && rightKnee.score > 0.9 &&
                                     leftAnkle.score > 0.9 && rightAnkle.score > 0.9;
             // Modified squat detection - check if hips are below knees
             const isSquatting = allPointsDetected && (avgHipY > avgKneeY - 120); // Hips must be below knees by at least 20px
@@ -738,7 +738,7 @@
                 if (isPowerHolding) {
                     console.log('Jump triggered - body part above line');
                     const holdTime = Date.now() - squatStartTime;
-                    const jumpPowerValue = Math.min(holdTime / 1000 * 3.5, 30); // Reduced multiplier from 15 to 7.5 for slower charging
+                    const jumpPowerValue = Math.min(holdTime / 1000 * 1.5, 20); // Reduced multiplier from 15 to 7.5 for slower charging
                     
                     isPowerHolding = false;
                     holdTimeElement.classList.remove('charging');
