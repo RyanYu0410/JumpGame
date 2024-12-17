@@ -459,7 +459,7 @@ function animate() {
         
         // 更新蓄力条
         powerBar.scale.y = power / jumpPower;
-        powerBar.position.copy(player.position).add(new THREE.Vector3(2, power/2, 0));
+        powerBar.position.copy(player.position).add(new THREE.Vector3(2, power, 0));
         
         // 更新预测轨迹和落点
         updateTrajectoryPredictor(power);
